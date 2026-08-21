@@ -66,12 +66,14 @@ class PolicyEngine:
         # Policy 6: Minimum Cooldown Period Enforcer (30 mins)
         if last_attempt_at_str:
             try:
-                # Handle ISO timestamps ending with Z or offset
-                last_dt_str = last_attempt_at_str.replace("Z", "")
+                last_dt_str = last_attempt_at_str.replace("Z", "+00:00")
                 last_dt = datetime.fromisoformat(last_dt_str)
+                if last_dt.tzinfo is not None:
+                    last_dt = last_dt.replace(tzinfo=None)
                 now_dt = datetime.utcnow()
                 if (now_dt - last_dt) < timedelta(minutes=settings.MIN_COOLDOWN_MINUTES):
-                    diff_mins = int((timedelta(minutes=settings.MIN_COOLDOWN_MINUTES) - (now_dt - last_dt)).total_seconds() / 60)
+                    seconds_left = (timedelta(minutes=settings.MIN_COOLDOWN_MINUTES) - (now_dt - last_dt)).total_seconds()
+                    diff_mins = max(1, int(seconds_left / 60))
                     return PolicyDecisionResult(
                         allowed=False,
                         rule_name="COOLDOWN_PERIOD_ACTIVE",

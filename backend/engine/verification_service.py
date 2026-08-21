@@ -59,21 +59,29 @@ class VerificationService:
                 "message": "Case escalated to merchant review queue."
             }
         else:
-            # Action failed! Increment payment_attempts count and update status to FAILED_ATTEMPT
+            # Action failed! Increment payment_attempts count
             new_attempts = case.get("payment_attempts", 1) + 1
+            from backend.config import settings
+            is_max_reached = new_attempts >= settings.MAX_PAYMENT_RETRIES
+            final_status = StatusEnum.SAFELY_STOPPED.value if is_max_reached else StatusEnum.FAILED_ATTEMPT.value
+
             update_data = {
-                "status": StatusEnum.FAILED_ATTEMPT.value,
+                "status": final_status,
                 "payment_attempts": new_attempts,
                 "updated_at": now_str,
                 "last_attempt_at": now_str,
                 "execution_result": execution_result
             }
+            if is_max_reached:
+                update_data["policy_status"] = "REJECTED"
+                update_data["policy_reason"] = f"Maximum payment retry limit ({settings.MAX_PAYMENT_RETRIES}) reached. Recovery safely stopped."
+
             db_manager.update_one("recovery_cases", {"id": case_id}, {"$set": update_data})
             return {
                 "verified": False,
-                "status": StatusEnum.FAILED_ATTEMPT.value,
+                "status": final_status,
                 "attempts_now": new_attempts,
-                "message": f"Action attempt failed. Retry count incremented to {new_attempts}."
+                "message": f"Action attempt failed. Retry count incremented to {new_attempts}." + (" Maximum attempts reached — recovery safely stopped." if is_max_reached else "")
             }
 
 verification_service = VerificationService()
