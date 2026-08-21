@@ -48,6 +48,16 @@ def startup_event():
     else:
         logger.info(f"Database ready with {len(existing_cases)} active recovery cases.")
 
+@app.get("/")
+def root_endpoint():
+    return {
+        "service": "RecoverAI Backend API Engine",
+        "status": "online",
+        "health": "/api/health",
+        "dashboard": "/api/dashboard",
+        "docs": "/docs"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
