@@ -225,11 +225,30 @@ export const DashboardPage: React.FC = () => {
                         <stop offset="95%" stopColor="#197A55" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="day" stroke="#8A8A8A" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#8A8A8A" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${v/1000}k`} />
-                    <Tooltip formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Amount']} />
-                    <Area type="monotone" dataKey="atRisk" stroke="#B42318" strokeWidth={2} fill="url(#riskGrad)" />
-                    <Area type="monotone" dataKey="recovered" stroke="#197A55" strokeWidth={2} fill="url(#recGrad)" />
+                    <XAxis dataKey="day" stroke="#64748B" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#64748B" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${v/1000}k`} />
+                    <Tooltip
+                      content={({ active, payload, label }: any) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-[#0F172A] text-white p-3 rounded-lg shadow-xl border border-[#334155] text-xs space-y-1 font-sans">
+                              <p className="font-bold text-[#94A3B8] border-b border-[#334155] pb-1">{label}</p>
+                              {payload.map((entry: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between gap-4">
+                                  <span style={{ color: entry.color === '#B42318' ? '#EF4444' : '#34D399' }} className="font-semibold">
+                                    {entry.dataKey === 'atRisk' ? 'Revenue At Risk' : 'Revenue Recovered'}:
+                                  </span>
+                                  <span className="font-mono font-bold text-white">₹{entry.value.toLocaleString('en-IN')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area type="monotone" dataKey="atRisk" stroke="#B42318" strokeWidth={2.5} fill="url(#riskGrad)" />
+                    <Area type="monotone" dataKey="recovered" stroke="#197A55" strokeWidth={2.5} fill="url(#recGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
