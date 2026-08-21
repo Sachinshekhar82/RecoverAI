@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { fetchCustomers } from '../services/api';
-import { Users } from 'lucide-react';
+import { Card } from '../components/common/Card';
+import { Badge } from '../components/common/Badge';
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -12,36 +13,36 @@ export const CustomersPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-slate-950 text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-[#F7F7F5] text-[#171717] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Header title="Merchant Customers Directory" subtitle="Historical payment completion rates and recovery metrics" />
+        <Header title="Customers" subtitle="Merchant customer reliability and payment history" />
 
-        <main className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <main className="p-6 space-y-6 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {customers.slice(0, 30).map((c) => (
-              <div key={c.customer_id} className="p-5 rounded-2xl bg-slate-900 border border-gray-800 shadow-xl space-y-3">
+              <Card key={c.customer_id} padding="p-4" className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center text-sm border border-blue-500/30">
+                  <div className="w-8 h-8 rounded-full bg-[#F7F7F5] border border-[#E7E7E3] flex items-center justify-center font-bold text-xs text-[#171717]">
                     {c.customer_name.charAt(0)}
                   </div>
                   <div>
-                    <h5 className="font-bold text-white text-sm">{c.customer_name}</h5>
-                    <p className="text-xs text-gray-400">{c.customer_email}</p>
+                    <h4 className="text-xs font-bold text-[#171717]">{c.customer_name}</h4>
+                    <p className="text-[10px] text-[#8A8A8A]">{c.customer_email}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-800">
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#E7E7E3]">
                   <div>
-                    <span className="text-gray-400">Total Cases</span>
-                    <p className="font-bold text-gray-200">{c.total_cases}</p>
+                    <span className="text-[#8A8A8A] text-[10px]">Total Cases</span>
+                    <p className="font-bold text-[#171717]">{c.total_cases}</p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Total Recovered</span>
-                    <p className="font-bold text-emerald-400">₹{c.total_amount_recovered.toLocaleString('en-IN')}</p>
+                    <span className="text-[#8A8A8A] text-[10px]">Total Recovered</span>
+                    <p className="font-bold text-[#197A55]">₹{c.total_amount_recovered.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </main>

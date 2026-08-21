@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
-import { fetchRecoveryCases, executeIntervention } from '../services/api';
+import { fetchRecoveryCases } from '../services/api';
 import { RecoveryCase } from '../types';
-import { Search, Filter, Play, ShieldAlert, ArrowUpRight } from 'lucide-react';
+import { Card } from '../components/common/Card';
+import { Badge } from '../components/common/Badge';
+import { Button } from '../components/common/Button';
+import { Skeleton, EmptyState } from '../components/common/States';
+import { Search, Filter, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const RecoveryListPage: React.FC = () => {
   const [cases, setCases] = useState<RecoveryCase[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('ALL');
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -18,7 +22,7 @@ export const RecoveryListPage: React.FC = () => {
   const loadData = () => {
     setLoading(true);
     fetchRecoveryCases({
-      category: categoryFilter || undefined,
+      category: activeTab !== 'ALL' ? activeTab : undefined,
       status: statusFilter || undefined,
       risk_level: riskFilter || undefined,
     }).then((res) => {
@@ -29,7 +33,7 @@ export const RecoveryListPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [categoryFilter, statusFilter, riskFilter]);
+  }, [activeTab, statusFilter, riskFilter]);
 
   const filteredCases = cases.filter(
     (c) =>
@@ -38,43 +42,56 @@ export const RecoveryListPage: React.FC = () => {
       c.transaction_id.toLowerCase().includes(search.toLowerCase())
   );
 
+  const tabs = [
+    { id: 'ALL', label: 'All Cases' },
+    { id: 'PAYMENT_FAILURE', label: 'Payment Failures' },
+    { id: 'CHECKOUT_ABANDONMENT', label: 'Checkout Abandonment' },
+    { id: 'FAILED_SUBSCRIPTION', label: 'Subscriptions' },
+    { id: 'OVERDUE_INVOICE', label: 'Invoices' },
+  ];
+
   return (
-    <div className="flex h-screen bg-slate-950 text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-[#F7F7F5] text-[#171717] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Header title="Active Revenue Recovery Workspace" subtitle="Monitor revenue at risk and execute policy-protected interventions" />
+        <Header title="Revenue Recovery" subtitle="Review and manage revenue at risk." />
 
-        <main className="p-6 space-y-5">
-          {/* Search & Filters Bar */}
-          <div className="p-4 rounded-xl bg-slate-900 border border-gray-800 flex flex-wrap items-center justify-between gap-4">
-            <div className="relative flex-1 min-w-[260px]">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+        <main className="p-6 space-y-5 max-w-7xl mx-auto w-full">
+          {/* Top Filter Tabs */}
+          <div className="flex items-center gap-1 border-b border-[#E7E7E3] pb-1">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`px-3.5 py-2 text-xs font-semibold rounded-t-lg transition-all ${
+                  activeTab === t.id
+                    ? 'border-b-2 border-[#171717] text-[#171717] font-bold'
+                    : 'text-[#666666] hover:text-[#171717]'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search & Secondary Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="relative flex-1 min-w-[280px]">
+              <Search className="w-4 h-4 text-[#8A8A8A] absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Search by Case ID, Customer, or Txn ID..."
+                placeholder="Filter cases by ID, customer name, transaction..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-950 border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-white border border-[#E7E7E3] rounded-lg pl-9 pr-4 py-2 text-xs text-[#171717] focus:outline-none focus:border-[#171717] shadow-card"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-slate-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-300"
-              >
-                <option value="">All Categories</option>
-                <option value="PAYMENT_FAILURE">Payment Failure</option>
-                <option value="CHECKOUT_ABANDONMENT">Checkout Abandonment</option>
-                <option value="FAILED_SUBSCRIPTION">Failed Subscription</option>
-                <option value="OVERDUE_INVOICE">Overdue Invoice</option>
-              </select>
-
+            <div className="flex items-center gap-2 text-xs">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-300"
+                className="bg-white border border-[#E7E7E3] rounded-lg px-3 py-2 text-[#171717] shadow-card focus:outline-none"
               >
                 <option value="">All Statuses</option>
                 <option value="RECOVERED">Recovered</option>
@@ -87,7 +104,7 @@ export const RecoveryListPage: React.FC = () => {
               <select
                 value={riskFilter}
                 onChange={(e) => setRiskFilter(e.target.value)}
-                className="bg-slate-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-300"
+                className="bg-white border border-[#E7E7E3] rounded-lg px-3 py-2 text-[#171717] shadow-card focus:outline-none"
               >
                 <option value="">All Risk Levels</option>
                 <option value="HIGH">High Risk</option>
@@ -98,69 +115,62 @@ export const RecoveryListPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Cases Table */}
-          <div className="p-5 rounded-2xl bg-slate-900 border border-gray-800 shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-800/50 text-gray-400 uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="p-3">Case ID</th>
-                    <th className="p-3">Customer</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Amount</th>
-                    <th className="p-3">Risk Level</th>
-                    <th className="p-3">AI Root Cause</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/60">
-                  {filteredCases.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-800/30 transition-all">
-                      <td className="p-3 font-bold text-blue-400">{c.id}</td>
-                      <td className="p-3">
-                        <div className="font-semibold text-white">{c.customer_name}</div>
-                        <div className="text-[10px] text-gray-400">{c.customer_email}</div>
-                      </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-medium">
-                          {c.category.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="p-3 font-bold text-white">₹{c.amount.toLocaleString('en-IN')}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded font-bold ${
-                          c.risk_level === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                          c.risk_level === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                          'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {c.risk_level}
-                        </span>
-                      </td>
-                      <td className="p-3 max-w-xs truncate text-gray-300">{c.root_cause || c.failure_reason}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded font-semibold ${
-                          c.status === 'RECOVERED' ? 'bg-emerald-500/20 text-emerald-400' :
-                          c.status === 'SAFELY_STOPPED' ? 'bg-amber-500/20 text-amber-400' :
-                          'bg-indigo-500/20 text-indigo-300'
-                        }`}>
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => navigate(`/recovery/${c.id}`)}
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium transition-all shadow-sm flex items-center gap-1 ml-auto"
-                        >
-                          Details <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+          {/* Work Queue Table */}
+          <Card padding="p-0" className="overflow-hidden">
+            {loading ? (
+              <div className="p-6 space-y-3">
+                <Skeleton height="h-10" />
+                <Skeleton height="h-10" />
+                <Skeleton height="h-10" />
+              </div>
+            ) : filteredCases.length === 0 ? (
+              <EmptyState title="No recovery cases found" subtitle="No cases matching your current filter criteria." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F7F7F5] text-[#666666] uppercase text-[10px] tracking-wider font-semibold border-b border-[#E7E7E3]">
+                    <tr>
+                      <th className="p-3.5">Customer</th>
+                      <th className="p-3.5">Revenue At Risk</th>
+                      <th className="p-3.5">Problem / Root Cause</th>
+                      <th className="p-3.5">Risk</th>
+                      <th className="p-3.5">Recovery Probability</th>
+                      <th className="p-3.5">AI Recommendation</th>
+                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-[#E7E7E3]">
+                    {filteredCases.map((c) => (
+                      <tr key={c.id} className="hover:bg-[#F7F7F5] transition-all">
+                        <td className="p-3.5">
+                          <div className="font-semibold text-[#171717]">{c.customer_name}</div>
+                          <div className="text-[10px] text-[#8A8A8A]">{c.id} • {c.customer_email}</div>
+                        </td>
+                        <td className="p-3.5 font-bold text-[#171717]">₹{c.amount.toLocaleString('en-IN')}</td>
+                        <td className="p-3.5 text-[#666666] max-w-xs truncate">{c.root_cause || c.failure_reason}</td>
+                        <td className="p-3.5">
+                          <Badge variant={c.risk_level}>{c.risk_level}</Badge>
+                        </td>
+                        <td className="p-3.5 font-semibold text-[#171717]">
+                          {Math.round((c.recovery_probability || 0.8) * 100)}%
+                        </td>
+                        <td className="p-3.5 text-[#666666] font-medium">{c.recommended_action}</td>
+                        <td className="p-3.5">
+                          <Badge variant={c.status}>{c.status}</Badge>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <Button variant="primary" size="sm" onClick={() => navigate(`/recovery/${c.id}`)}>
+                            Review Case
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </main>
       </div>
     </div>
