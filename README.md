@@ -135,17 +135,6 @@ All 8 tests pass with 100% success rate.
 
 ---
 
-## 5-Minute Pitch & Video Script Mapping
-
-- **0:00–0:30 (Problem):** "Merchants lose up to 15% of revenue through payment failures, checkout abandonments, failed subscriptions, and overdue invoices."
-- **0:30–1:15 (Dashboard):** Show `/dashboard` displaying **₹4,85,000** Revenue at Risk, **₹2,73,500** Recovered (**56.39%** Recovery Rate).
-- **1:15–2:00 (Detection & Root Cause):** Select a payment failure case. Show Gemini LLM root cause diagnosis (confidence: 88%).
-- **2:00–2:45 (Policy Engine & Razorpay Execution):** Show Policy Engine approving the retry action. Execute Razorpay test payment retry workflow. Show ₹4,999 recovered.
-- **2:45–3:30 (Subscription Dunning & Stopping Rules):** Show `/subscriptions` displaying Attempt 1, Attempt 2, Attempt 3, and **STOPPED** status badge when limit reached.
-- **3:30–4:15 (Batch Evaluation):** Show `/evaluation` with programmatic metrics across 200 synthetic records.
-- **4:15–4:45 (Audit Trail & AI Console):** Show `/audit` timeline and ask the AI Agent console *"Why did you stop recovery for customer X?"*
-- **4:45–5:00 (Closing):** "RecoverAI doesn't just detect lost revenue. It closes the loop — safely."
-
 ---
 
 ## Security & Governance
