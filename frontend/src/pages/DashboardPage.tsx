@@ -7,6 +7,8 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { Skeleton, ErrorState } from '../components/common/States';
+import { RevenueBriefingModal } from '../components/dashboard/RevenueBriefingModal';
+import { RevenueIntelligenceCard } from '../components/dashboard/RevenueIntelligenceCard';
 import { 
   TrendingUp, 
   ShieldAlert, 
@@ -15,7 +17,8 @@ import {
   AlertTriangle, 
   CheckCircle2,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer 
@@ -26,6 +29,7 @@ export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<{ metrics: BatchEvaluation; recent_risk_cases: RecoveryCase[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showBriefingModal, setShowBriefingModal] = useState(false);
   const navigate = useNavigate();
 
   const loadDashboard = () => {
@@ -35,6 +39,12 @@ export const DashboardPage: React.FC = () => {
       .then((res) => {
         setData(res);
         setLoading(false);
+
+        // First-touch in session trigger
+        const hasSeen = sessionStorage.getItem('recoverai_briefing_seen');
+        if (!hasSeen) {
+          setShowBriefingModal(true);
+        }
       })
       .catch((err) => {
         setError(err.message || 'Failed to connect to backend server');
@@ -45,6 +55,11 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const handleCloseModal = () => {
+    setShowBriefingModal(false);
+    sessionStorage.setItem('recoverai_briefing_seen', 'true');
+  };
 
   if (loading) {
     return (
@@ -106,21 +121,34 @@ export const DashboardPage: React.FC = () => {
         <Header title="Overview" />
 
         <main className="p-6 space-y-6 max-w-7xl mx-auto w-full">
-          {/* Welcome Header */}
+          {/* Welcome Header & Reopen Control */}
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#171717]">Good morning, Sachin</h2>
               <p className="text-xs text-[#666666] mt-0.5">Revenue recovery overview for today.</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => navigate('/agent')} icon={<TrendingUp className="w-3.5 h-3.5" />}>
-                Revenue Intelligence
+              <Button
+                variant="secondary"
+                onClick={() => setShowBriefingModal(true)}
+                icon={<Zap className="w-3.5 h-3.5 text-[#3B5CCC]" />}
+              >
+                Revenue Briefing
               </Button>
               <Button variant="primary" onClick={() => navigate('/recovery')}>
                 Review Cases ({metrics.total_records})
               </Button>
             </div>
           </div>
+
+          {/* Persistent Compact Today's Briefing Card */}
+          <RevenueIntelligenceCard
+            summary="Payment failures represent your largest active recovery opportunity today."
+            topRiskCategory="Payment Failures"
+            topRiskAmount={145000}
+            topRiskCount={72}
+            onOpenFullBriefing={() => setShowBriefingModal(true)}
+          />
 
           {/* Top Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -167,7 +195,7 @@ export const DashboardPage: React.FC = () => {
 
           {/* Main Content Grid: Recovery Chart + Needs Attention Panel */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* Main Recovery Chart (2 cols) */}
+            {/* Main Recovery Chart */}
             <Card padding="p-5" className="lg:col-span-2 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -207,7 +235,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             </Card>
 
-            {/* Needs Attention Panel (1 col) */}
+            {/* Needs Attention Panel */}
             <Card padding="p-5">
               <h3 className="text-sm font-bold text-[#171717] mb-1">Needs Attention</h3>
               <p className="text-xs text-[#666666] mb-4">Revenue breakdown requiring review</p>
@@ -283,6 +311,14 @@ export const DashboardPage: React.FC = () => {
             </div>
           </Card>
         </main>
+
+        {/* Revenue Briefing Modal */}
+        <RevenueBriefingModal
+          isOpen={showBriefingModal}
+          onClose={handleCloseModal}
+          metrics={metrics}
+          recentCases={recent_risk_cases}
+        />
       </div>
     </div>
   );
