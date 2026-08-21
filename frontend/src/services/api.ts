@@ -1,10 +1,52 @@
 import { RecoveryCase, AuditEvent, BatchEvaluation, AgentQueryResponse } from '../types';
 
-const API_BASE = '/api';
+const PRIMARY_API = '/api';
+const FALLBACK_API = 'https://recoverai-bjs3.onrender.com/api';
+
+/**
+ * Robust fetch helper with automatic cold-start retries & endpoint fallbacks
+ */
+async function safeFetch(endpoint: string, options?: RequestInit, retries = 3): Promise<Response> {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // Try primary endpoint (/api) first, then direct Render URL fallback
+  const urlsToTry = [
+    `${PRIMARY_API}${cleanEndpoint}`,
+    `${FALLBACK_API}${cleanEndpoint}`
+  ];
+
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    for (const baseUrl of urlsToTry) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout per attempt
+
+        const res = await fetch(baseUrl, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          return res;
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    // Delay 1.5s before next retry if server is waking up
+    if (attempt < retries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+
+  throw lastError || new Error(`Failed to fetch from ${endpoint}`);
+}
 
 export async function fetchDashboardSummary() {
-  const res = await fetch(`${API_BASE}/dashboard`);
-  if (!res.ok) throw new Error('Failed to fetch dashboard data');
+  const res = await safeFetch('/dashboard');
   return res.json();
 }
 
@@ -14,56 +56,49 @@ export async function fetchRecoveryCases(filters?: { category?: string; status?:
   if (filters?.status) params.append('status', filters.status);
   if (filters?.risk_level) params.append('risk_level', filters.risk_level);
   
-  const res = await fetch(`${API_BASE}/recovery/cases?${params.toString()}`);
-  if (!res.ok) throw new Error('Failed to fetch recovery cases');
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  const res = await safeFetch(`/recovery/cases${queryString}`);
   return res.json();
 }
 
 export async function fetchCaseDetail(caseId: string) {
-  const res = await fetch(`${API_BASE}/recovery/${caseId}`);
-  if (!res.ok) throw new Error(`Failed to fetch case detail for ${caseId}`);
+  const res = await safeFetch(`/recovery/${caseId}`);
   return res.json();
 }
 
 export async function analyzeCase(caseId: string) {
-  const res = await fetch(`${API_BASE}/recovery/${caseId}/analyze`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to analyze case');
+  const res = await safeFetch(`/recovery/${caseId}/analyze`, { method: 'POST' });
   return res.json();
 }
 
 export async function executeIntervention(caseId: string, actionType?: string) {
   const params = actionType ? `?action_type=${actionType}` : '';
-  const res = await fetch(`${API_BASE}/recovery/${caseId}/execute${params}`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to execute intervention');
+  const res = await safeFetch(`/recovery/${caseId}/execute${params}`, { method: 'POST' });
   return res.json();
 }
 
 export async function stopCase(caseId: string, reason?: string) {
   const params = reason ? `?reason=${encodeURIComponent(reason)}` : '';
-  const res = await fetch(`${API_BASE}/recovery/${caseId}/stop${params}`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to stop recovery case');
+  const res = await safeFetch(`/recovery/${caseId}/stop${params}`, { method: 'POST' });
   return res.json();
 }
 
 export async function queryAgentConsole(query: string): Promise<AgentQueryResponse> {
-  const res = await fetch(`${API_BASE}/agent/query`, {
+  const res = await safeFetch('/agent/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query })
   });
-  if (!res.ok) throw new Error('Failed to query AI Agent console');
   return res.json();
 }
 
 export async function fetchBatchEvaluation(): Promise<BatchEvaluation> {
-  const res = await fetch(`${API_BASE}/evaluation`);
-  if (!res.ok) throw new Error('Failed to fetch evaluation metrics');
+  const res = await safeFetch('/evaluation');
   return res.json();
 }
 
 export async function fetchExceptions() {
-  const res = await fetch(`${API_BASE}/evaluation/exceptions`);
-  if (!res.ok) throw new Error('Failed to fetch exceptions');
+  const res = await safeFetch('/evaluation/exceptions');
   return res.json();
 }
 
@@ -73,31 +108,27 @@ export async function fetchAuditTrail(filters?: { transaction_id?: string; actor
   if (filters?.actor) params.append('actor', filters.actor);
   if (filters?.policy_decision) params.append('policy_decision', filters.policy_decision);
   
-  const res = await fetch(`${API_BASE}/audit?${params.toString()}`);
-  if (!res.ok) throw new Error('Failed to fetch audit trail');
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  const res = await safeFetch(`/audit${queryString}`);
   return res.json();
 }
 
 export async function fetchTransactions() {
-  const res = await fetch(`${API_BASE}/transactions`);
-  if (!res.ok) throw new Error('Failed to fetch transactions');
+  const res = await safeFetch('/transactions');
   return res.json();
 }
 
 export async function fetchCustomers() {
-  const res = await fetch(`${API_BASE}/customers`);
-  if (!res.ok) throw new Error('Failed to fetch customers');
+  const res = await safeFetch('/customers');
   return res.json();
 }
 
 export async function fetchSubscriptions() {
-  const res = await fetch(`${API_BASE}/subscriptions`);
-  if (!res.ok) throw new Error('Failed to fetch subscriptions');
+  const res = await safeFetch('/subscriptions');
   return res.json();
 }
 
 export async function fetchInvoices() {
-  const res = await fetch(`${API_BASE}/invoices`);
-  if (!res.ok) throw new Error('Failed to fetch invoices');
+  const res = await safeFetch('/invoices');
   return res.json();
 }
